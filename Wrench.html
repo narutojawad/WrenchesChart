@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flange Bolt and Wrench Size Selector</title>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better centering and font */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex justify-center items-center min-h-screen">
+
+    <div class="bg-white p-6 sm:p-10 rounded-xl shadow-2xl max-w-lg w-full">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800 text-center">
+            Flange Bolt and Wrench Size Selector
+        </h1>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <!-- Flange Size Dropdown -->
+            <div>
+                <label for="size-select" class="block text-sm font-medium text-gray-700 mb-2">
+                    1. Select Blind Size (NPS):
+                </label>
+                <select id="size-select" onchange="updateClasses()" 
+                        class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-lg transition duration-150 ease-in-out">
+                    <!-- Options populated by JavaScript -->
+                    <option value="" disabled selected>-- Select Size --</option>
+                </select>
+            </div>
+            
+            <!-- Class Dropdown (Dependent) -->
+            <div>
+                <label for="class-select" class="block text-sm font-medium text-gray-700 mb-2">
+                    2. Select Pressure Class:
+                </label>
+                <select id="class-select" onchange="displayInfo()" disabled
+                        class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-gray-100 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-lg transition duration-150 ease-in-out">
+                    <option value="" disabled selected>-- Select Class --</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- This is where the output information is displayed -->
+        <div id="flange-info" class="p-4 bg-indigo-50 border-l-4 border-indigo-500 text-indigo-800 rounded-lg text-lg min-h-[50px]">
+            Select both a size and a class to see the required specifications.
+        </div>
+    </div>
+
+    <script>
+        // Data Structure for all Flange sizes, classes, and specs
+        const flangeData = {
+            "3/4\"": {
+                "150": { wrench: "7/8\"", bolts: 4 }, "1500": { wrench: "1 1/4\"", bolts: 4 }, "2500": { wrench: "1 1/4\"", bolts: 4 },
+                "600": { wrench: "1 1/16\"", bolts: 4 }, "900": { wrench: "1 1/4\"", bolts: 4 }, "300": { wrench: "1 1/16\"", bolts: 4 }
+            },
+            "1/2\"": {
+                "150": { wrench: "7/8\"", bolts: 4 }, "1500": { wrench: "1 1/4\"", bolts: 4 }, "2500": { wrench: "1 1/4\"", bolts: 4 },
+                "300": { wrench: "7/8\"", bolts: 4 }, "600": { wrench: "7/8\"", bolts: 4 }, "900": { wrench: "1 1/4\"", bolts: 4 }
+            },
+            "1\"": {
+                "150": { wrench: "7/8\"", bolts: 4 }, "1500": { wrench: "1 7/16\"", bolts: 4 }, "2500": { wrench: "1 7/16\"", bolts: 4 },
+                "600": { wrench: "1 1/16\"", bolts: 4 }, "900": { wrench: "1 7/16\"", bolts: 4 }, "300": { wrench: "1 1/16\"", bolts: 4 }
+            },
+            "1 1/2\"": {
+                "150": { wrench: "7/8\"", bolts: 4 }, "1500": { wrench: "1 5/8\"", bolts: 4 }, "2500": { wrench: "1 13/16\"", bolts: 4 },
+                "600": { wrench: "1 1/4\"", bolts: 4 }, "900": { wrench: "1 5/8\"", bolts: 4 }, "300": { wrench: "1 1/4\"", bolts: 4 }
+            },
+            "1 1/4\"": {
+                "150": { wrench: "7/8\"", bolts: 4 }, "1500": { wrench: "1 7/16\"", bolts: 4 }, "2500": { wrench: "1 5/8\"", bolts: 4 },
+                "600": { wrench: "1 1/16\"", bolts: 4 }, "900": { wrench: "1 7/16\"", bolts: 4 }, "300": { wrench: "1 1/16\"", bolts: 4 }
+            },
+            "2\"": {
+                "150": { wrench: "1 1/16\"", bolts: 4 }, "1500": { wrench: "1 7/16\"", bolts: 8 }, "2500": { wrench: "1 5/8\"", bolts: 8 },
+                "300": { wrench: "1 1/16\"", bolts: 8 }, "600": { wrench: "1 1/16\"", bolts: 8 }, "900": { wrench: "1 7/16\"", bolts: 8 }
+            },
+            "2 1/2\"": {
+                "150": { wrench: "1 1/16\"", bolts: 4 }, "1500": { wrench: "1 5/8\"", bolts: 8 }, "2500": { wrench: "1 13/16\"", bolts: 8 },
+                "300": { wrench: "1 1/4\"", bolts: 8 }, "600": { wrench: "1 1/4\"", bolts: 8 }, "900": { wrench: "1 5/8\"", bolts: 8 }
+            },
+            "3\"": {
+                "150": { wrench: "1 1/16\"", bolts: 4 }, "1500": { wrench: "1 13/16\"", bolts: 8 }, "2500": { wrench: "2\"", bolts: 8 },
+                "300": { wrench: "1 1/4\"", bolts: 8 }, "600": { wrench: "1 1/4\"", bolts: 8 }, "900": { wrench: "1 7/16\"", bolts: 8 }
+            },
+            "3 1/2\"": {
+                "150": { wrench: "1 1/16\"", bolts: 8 }, "300": { wrench: "1 1/4\"", bolts: 8 }, "600": { wrench: "1 7/16\"", bolts: 8 },
+                "900": { wrench: "1 13/16\"", bolts: 8 }
+            },
+            "4\"": {
+                "150": { wrench: "1 1/16\"", bolts: 8 }, "1500": { wrench: "2\"", bolts: 8 }, "2500": { wrench: "2 3/8\"", bolts: 8 },
+                "300": { wrench: "1 1/4\"", bolts: 8 }, "600": { wrench: "1 7/16\"", bolts: 8 }, "900": { wrench: "1 13/16\"", bolts: 8 }
+            },
+            "5\"": {
+                "150": { wrench: "1 1/4\"", bolts: 8 }, "1500": { wrench: "2 3/8\"", bolts: 8 }, "2500": { wrench: "2 3/4\"", bolts: 8 },
+                "300": { wrench: "1 1/4\"", bolts: 8 }, "600": { wrench: "1 5/8\"", bolts: 8 }, "900": { wrench: "2\"", bolts: 8 }
+            },
+            "6\"": {
+                "150": { wrench: "1 1/4\"", bolts: 8 }, "1500": { wrench: "2 3/16\"", bolts: 12 }, "2500": { wrench: "3 1/8\"", bolts: 8 },
+                "300": { wrench: "1 1/4\"", bolts: 12 }, "600": { wrench: "1 5/8\"", bolts: 12 }, "900": { wrench: "1 13/16\"", bolts: 12 }
+            },
+            "8\"": {
+                "150": { wrench: "1 1/4\"", bolts: 8 }, "1500": { wrench: "2 9/16\"", bolts: 12 }, "2500": { wrench: "3 1/8\"", bolts: 12 },
+                "300": { wrench: "1 7/16\"", bolts: 12 }, "600": { wrench: "1 13/16\"", bolts: 12 }, "900": { wrench: "2 3/16\"", bolts: 12 }
+            },
+            "10\"": {
+                "150": { wrench: "1 7/16\"", bolts: 12 }, "1500": { wrench: "2 15/16\"", bolts: 12 }, "2500": { wrench: "3 7/8\"", bolts: 12 },
+                "300": { wrench: "1 5/8\"", bolts: 16 }, "600": { wrench: "2\"", bolts: 16 }, "900": { wrench: "2 3/16\"", bolts: 20 }
+            },
+            "12\"": {
+                "150": { wrench: "1 7/16\"", bolts: 12 }, "1500": { wrench: "3 1/8\"", bolts: 16 }, "2500": { wrench: "4 1/4\"", bolts: 12 },
+                "300": { wrench: "1 13/16\"", bolts: 16 }, "600": { wrench: "2\"", bolts: 20 }, "900": { wrench: "2 3/16\"", bolts: 20 }
+            },
+            "14\"": {
+                "150": { wrench: "1 5/8\"", bolts: 12 }, "1500": { wrench: "3 1/2\"", bolts: 16 },
+                "300": { wrench: "1 13/16\"", bolts: 20 }, "600": { wrench: "2 3/16\"", bolts: 20 }, "900": { wrench: "2 3/8\"", bolts: 20 }
+            },
+            "16\"": {
+                "150": { wrench: "1 5/8\"", bolts: 16 }, "1500": { wrench: "3 7/8\"", bolts: 16 },
+                "300": { wrench: "2\"", bolts: 20 }, "600": { wrench: "2 3/8\"", bolts: 20 }, "900": { wrench: "2 15/16\"", bolts: 20 }
+            },
+            "18\"": {
+                "150": { wrench: "1 13/16\"", bolts: 16 }, "1500": { wrench: "4 1/4\"", bolts: 16 },
+                "300": { wrench: "2\"", bolts: 24 }, "600": { wrench: "2 9/16\"", bolts: 20 }, "900": { wrench: "2 9/16\"", bolts: 20 }
+            },
+            "20\"": {
+                "150": { wrench: "1 13/16\"", bolts: 20 }, "1500": { wrench: "4 5/8\"", bolts: 16 },
+                "300": { wrench: "2\"", bolts: 24 }, "600": { wrench: "2 9/16\"", bolts: 24 }, "900": { wrench: "3 1/8\"", bolts: 20 }
+            },
+            "24\"": {
+                "150": { wrench: "2\"", bolts: 20 }, "1500": { wrench: "5 3/8\"", bolts: 16 },
+                "300": { wrench: "2 3/8\"", bolts: 24 }, "600": { wrench: "2 15/16\"", bolts: 24 }, "900": { wrench: "3 7/8\"", bolts: 20 }
+            },
+            "26\"": { "150": { wrench: "2\"", bolts: 24 }, "300": { wrench: "2 9/16\"", bolts: 28 } },
+            "28\"": { "150": { wrench: "2\"", bolts: 28 }, "300": { wrench: "2 9/16\"", bolts: 28 } },
+            "30\"": { "150": { wrench: "2\"", bolts: 28 }, "300": { wrench: "2 3/4\"", bolts: 28 } },
+            "36\"": { "150": { wrench: "2 3/8\"", bolts: 32 }, "300": { wrench: "3 1/8\"", bolts: 32 } },
+            "42\"": { "150": { wrench: "2 3/8\"", bolts: 36 }, "300": { wrench: "3 1/8\"", bolts: 36 } }
+        };
+
+        /**
+         * Converts flange size string (e.g., "1 1/2\"", "3/4\"", "12\"") to a float for numerical sorting.
+         * @param {string} sizeStr - The size string.
+         * @returns {number} The numerical equivalent.
+         */
+        function parseFlangeSize(sizeStr) {
+            // Remove inches (") for cleaner parsing
+            const cleanedStr = sizeStr.replace(/\"/g, '');
+
+            // Handle mixed numbers (e.g., "1 1/2")
+            if (cleanedStr.includes(' ')) {
+                const parts = cleanedStr.split(' ');
+                const whole = parseFloat(parts[0]);
+                const fractionParts = parts[1].split('/');
+                const numerator = parseFloat(fractionParts[0]);
+                const denominator = parseFloat(fractionParts[1]);
+                return whole + (numerator / denominator);
+            }
+            // Handle simple fractions (e.g., "3/4")
+            if (cleanedStr.includes('/')) {
+                const parts = cleanedStr.split('/');
+                return parseFloat(parts[0]) / parseFloat(parts[1]);
+            }
+            // Handle whole numbers (e.g., "12")
+            return parseFloat(cleanedStr);
+        }
+
+        /**
+         * Custom sort function for flange sizes.
+         */
+        function sortFlangeSizes(a, b) {
+            const numA = parseFlangeSize(a);
+            const numB = parseFlangeSize(b);
+            return numA - numB;
+        }
+
+
+        /**
+         * Populates the size dropdown with unique sizes available in flangeData.
+         */
+        function populateSizes() {
+            const sizeSelect = document.getElementById('size-select');
+            
+            // Generate options for each unique size
+            // Use the custom sort function to sort numerically
+            Object.keys(flangeData).sort(sortFlangeSizes).forEach(size => {
+                const option = document.createElement('option');
+                option.value = size;
+                option.textContent = size;
+                sizeSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Updates the class dropdown based on the currently selected size.
+         */
+        function updateClasses() {
+            const sizeSelect = document.getElementById('size-select');
+            const classSelect = document.getElementById('class-select');
+            const selectedSize = sizeSelect.value;
+            
+            // Reset class dropdown
+            classSelect.innerHTML = '<option value="" disabled selected>-- Select Class --</option>';
+            classSelect.disabled = true;
+            classSelect.classList.remove('bg-white');
+            classSelect.classList.add('bg-gray-100');
+
+            // Reset info display
+            clearInfo();
+
+            if (selectedSize) {
+                const availableClasses = Object.keys(flangeData[selectedSize]);
+                
+                // Sort classes numerically (e.g., 150, 300, 600, 900, 1500, 2500)
+                availableClasses.sort((a, b) => parseInt(a) - parseInt(b)).forEach(flangeClass => {
+                    const option = document.createElement('option');
+                    option.value = flangeClass;
+                    option.textContent = `Class ${flangeClass}`;
+                    classSelect.appendChild(option);
+                });
+
+                classSelect.disabled = false;
+                classSelect.classList.add('bg-white');
+                classSelect.classList.remove('bg-gray-100');
+            }
+        }
+        
+        /**
+         * Displays the final wrench and bolt information based on both selected options.
+         */
+        function displayInfo() {
+            const sizeSelect = document.getElementById('size-select');
+            const classSelect = document.getElementById('class-select');
+            const selectedSize = sizeSelect.value;
+            const selectedClass = classSelect.value;
+            const infoDisplay = document.getElementById('flange-info');
+
+            if (selectedSize && selectedClass) {
+                const specs = flangeData[selectedSize][selectedClass];
+                const infoText = `Wrench: ${specs.wrench}<br>Bolts: ${specs.bolts}`;
+                
+                infoDisplay.innerHTML = `<span class="font-semibold text-gray-900">Required Specifications for ${selectedSize} x ${selectedClass}:</span><br>${infoText}`;
+                infoDisplay.classList.remove('bg-indigo-50', 'border-indigo-500', 'text-indigo-800');
+                infoDisplay.classList.add('bg-green-50', 'border-green-500', 'text-green-800');
+            } else {
+                clearInfo();
+            }
+        }
+
+        /**
+         * Resets the info display to the initial message.
+         */
+        function clearInfo() {
+            const infoDisplay = document.getElementById('flange-info');
+            infoDisplay.innerHTML = "Select both a size and a class to see the required specifications.";
+            infoDisplay.classList.add('bg-indigo-50', 'border-indigo-500', 'text-indigo-800');
+            infoDisplay.classList.remove('bg-green-50', 'border-green-500', 'text-green-800');
+        }
+
+        // Initialize the size dropdown when the page loads
+        document.addEventListener('DOMContentLoaded', populateSizes);
+    </script>
+
+</body>
+</html>
